@@ -68,13 +68,14 @@ async function bootstrap() {
   `;
   console.log("정상 쿼리", query.getSql());
 
+  const sqlInjectParams = `''; DROP TABLE posts CASCADE; --`;
   const sqlInjection = sql`
     SELECT
       *
     FROM
       posts
     WHERE
-      title = ${`'; DROP TABLE posts; --`}
+      title like ${sqlInjectParams}
   `;
   console.log("공격 쿼리", sqlInjection.getSql());
 
