@@ -1,7 +1,8 @@
 import { pipe } from "fp-ts/lib/function";
-import { flatten, zip, reduce, map, concat } from "fp-ts/lib/ReadonlyArray";
+import { flatten, zip, reduce, map, concatW } from "fp-ts/lib/ReadonlyArray";
 import { Client } from "pg";
 import escapeString from "escape-sql-string";
+import { fold, fromNullable } from "fp-ts/lib/Option";
 
 const client = new Client({
   user: "postgres",
@@ -19,33 +20,34 @@ class Tsql {
   public getSql = (): string =>
     pipe(
       this.values,
-      map(this.paramFormat),
-      concat([""]),
+      map(this.format),
+      concatW([""]),
       (params) => zip(this.strings.raw, params),
       flatten,
       reduce("", (acc, s) => acc + s)
     );
 
-  private paramFormat<T>(v: T) {
-    switch (typeof v) {
-      case "string":
-        return escapeString(v);
-      case "number":
-        return v.toString();
-      case "object":
-        if (v === null) {
-          return "NULL";
-        } else if (v instanceof Date) {
-          return `'${v.toISOString()}'`;
-        } else if (v instanceof Tsql) {
-          return v.getSql();
-        } else {
-          throw new Error(`Unsupported object type: ${typeof v}`);
+  private format = <T>(v: T): string | number =>
+    pipe(
+      fromNullable(v),
+      fold(
+        () => "NULL",
+        (value) => {
+          switch (typeof value) {
+            case "string":
+              return escapeString(value);
+            case "number":
+              return value;
+            case "object":
+              if (value instanceof Date) return `'${value.toISOString()}'`;
+              else if (value instanceof Tsql) return value.getSql();
+              else throw new Error(`Unsupported object type: ${typeof value}`);
+            default:
+              throw new Error(`Unsupported type: ${value}`);
+          }
         }
-      default:
-        throw new Error(`Unsupported type: ${typeof v}`);
-    }
-  }
+      )
+    );
 }
 
 const sql = (
@@ -78,7 +80,7 @@ async function bootstrap() {
 
   const nestedSql = sql`
     SELECT
-      *
+      count(*)
     FROM
       posts
     WHERE
