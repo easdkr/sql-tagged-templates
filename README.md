@@ -1,4 +1,4 @@
-# Prisma kysely playground
+# SQL tagged template
 
 To install dependencies:
 
@@ -6,29 +6,7 @@ To install dependencies:
 bun install
 ```
 
-To create the database:
-
-```bash
-docker compose up -d
-```
-
-To sink the database with prisma:
-
-```bash
-bun db:push
-```
-
-To generate the prisma client:
-
-```bash
-bun db:generate
-```
-
-To seed:
-
-```bash
-bun db:seed
-```
+If you want to run this example, then create `posts`, `users` table on your pg-db
 
 To run:
 
